@@ -1,5 +1,6 @@
 'use strict'
 var request = require('request');
+var url = require('url');
 
 var governify = Object();
 
@@ -16,10 +17,11 @@ governify.control = function(opt){
 
 	// return middleware function
 	return function (req, res, next){
-
+		if(!req.query){
+			req.query = url.parse(req.url, true).query;
+		}
 		if(!req.query.user){
-			res.status(401)
-			res.send('Unauthorized! please check the user query param');
+			sendErrorResponse('Unauthorized! please check the user query param', res);
 		}else{
 			isPermitedRequest(options, req, res, next, addRequest);
 		}		
@@ -29,7 +31,6 @@ governify.control = function(opt){
 
 function isPermitedRequest(options, req, res, next, callback){
 	console.log("Checking if isPermitedRequest...");
-
 	var propertyUrl = options.datastore +  "agreements/" + req.query.user + "/guarantees/RequestTerm";
 	request(propertyUrl, function(error, response, body){
 		if(!error && response.statusCode == 200 ){
@@ -37,12 +38,11 @@ function isPermitedRequest(options, req, res, next, callback){
 			if(body === "true"){
 				addRequest(options, req, res, next);
 			}else{
-				res.status(401)
-				res.send('Unauthorized! please check your SLA.');
+				sendErrorResponse('Unauthorized! please check your SLA.', res);
+				
 			}			
 		}else{
-			res.status(401)
-			res.send('Unauthorized! please check your SLA.');
+			sendErrorResponse('Unauthorized! please check your SLA.', res)
 		}
 	});
 
@@ -69,6 +69,17 @@ function addRequest(options, req, res, next){
 			console.log("No data, please check your SLA.");
 		}
 	});
+}
+
+//add suppot to Connect modify returned options
+function sendErrorResponse(message, res){
+	try{
+		res.status(401)
+		res.send(message);
+	}catch(err){
+		res.statusCode = 401;
+		res.end(message);
+	}
 }
 
 module.exports = governify;
