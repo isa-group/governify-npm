@@ -1,0 +1,31 @@
+{
+  "name": "governify",
+  "version": "0.0.1",
+  "description": "App Middleware to control api's by SLA using AML",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isa-group/governify-npm.git"
+  },
+  "keywords": [
+    "aml",
+    "sla",
+    "app",
+    "middleware"
+  ],
+  "author": "ISA Group",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/isa-group/governify-npm/issues"
+  },
+  "homepage": "https://github.com/isa-group/governify-npm#readme",
+  "dependencies": {
+    "request": "^2.69.0"
+  },
+  "devDependencies": {
+    "express": "^4.13.4"
+  }
+}
