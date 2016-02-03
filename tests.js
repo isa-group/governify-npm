@@ -21,8 +21,10 @@ var birds = [
 	}
 ]
 app.get("/api/v1/birds", function(req, res){
-	res.send(birds);
-	res.end();
+	setTimeout( function(){
+		res.send(birds);
+		res.end();	
+	},200);
 });
 
 app.listen(9999, function(){

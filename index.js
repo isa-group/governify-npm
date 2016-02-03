@@ -1,6 +1,7 @@
 'use strict'
 var request = require('request');
 var url = require('url');
+var responseTime = require('response-time');
 
 var governify = Object();
 
@@ -16,16 +17,21 @@ governify.control = function(opt){
 		options = opt;
 
 	// return middleware function
-	return function (req, res, next){
-		if(!req.query){
-			req.query = url.parse(req.url, true).query;
-		}
-		if(!req.query.user){
-			sendErrorResponse('Unauthorized! please check the user query param', res);
-		}else{
-			isPermitedRequest(options, req, res, next, addRequest);
-		}		
-	}
+	return [
+		function (req, res, next){
+			if(!req.query){
+				req.query = url.parse(req.url, true).query;
+			}
+			if(!req.query.user){
+				sendErrorResponse('Unauthorized! please check the user query param', res);
+			}else{
+				isPermitedRequest(options, req, res, next, addRequest);
+			}		
+		}, 
+		responseTime(function(req, res, time){
+			console.log("respondTime: " + time );						
+		})
+	];
 
 }
 
@@ -39,7 +45,6 @@ function isPermitedRequest(options, req, res, next, callback){
 				addRequest(options, req, res, next);
 			}else{
 				sendErrorResponse('Unauthorized! please check your SLA.', res);
-				
 			}			
 		}else{
 			sendErrorResponse('Unauthorized! please check your SLA.', res)
@@ -59,7 +64,7 @@ function addRequest(options, req, res, next){
 			request.post({url: propertyUrl, body : JSON.stringify(property), headers:{'Content-Type':'application/json'}}, function(error, response, body){
 				if(!error){
 					console.log("Requests property has been updated.");
-					next();
+					next();			
 				}else{
 					console.log("Has occurred an error while it tried update Requests property");
 				}
@@ -71,7 +76,7 @@ function addRequest(options, req, res, next){
 	});
 }
 
-//add suppot to Connect modify returned options
+//add suppot to Connect, modifing returned options
 function sendErrorResponse(message, res){
 	try{
 		res.status(401)
