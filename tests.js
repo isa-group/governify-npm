@@ -7,7 +7,13 @@ var options = {
 	datastore: "http://datastore.governify.io/api/v5/"
 };
 
-app.use(governify.control(options));
+governify.control(options, function(terms){
+	
+	app.use(terms.Requests);
+
+	app.use(terms.ResponseTime);	
+
+});
 
 var birds = [
 	{
@@ -21,10 +27,8 @@ var birds = [
 	}
 ]
 app.get("/api/v1/birds", function(req, res){
-	setTimeout( function(){
-		res.send(birds);
-		res.end();	
-	},200);
+	res.send(birds);
+	res.end();
 });
 
 app.listen(9999, function(){

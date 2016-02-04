@@ -1,13 +1,20 @@
 var governify = require('./index.js');
-var express = require('connect');
+var connect = require('connect');
 
-var app = express();
+var app = connect();
 
 var options = {
 	datastore: "http://datastore.governify.io/api/v5/"
 };
 
-app.use(governify.control(options));
+governify.control(options, function(terms){
+	
+	app.use(terms.Requests);
+
+	app.use(terms.ResponseTime);
+
+});
+
 
 var birds = [
 	{
@@ -21,8 +28,7 @@ var birds = [
 	}
 ]
 app.use("/api/v1/birds", function(req, res){
-	res.send(birds);
-	res.end();
+	res.end(JSON.stringify(birds, true));
 });
 
 app.listen(9999, function(){

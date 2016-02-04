@@ -5,7 +5,7 @@ var responseTime = require('response-time');
 
 var governify = Object();
 
-governify.control = function(opt){
+governify.control = function(opt, callback){
 
 	//default options.
 	var options = {
@@ -17,22 +17,39 @@ governify.control = function(opt){
 		options = opt;
 
 	// return middleware function
-	return [
-		function (req, res, next){
-			if(!req.query){
-				req.query = url.parse(req.url, true).query;
-			}
-			if(!req.query.user){
-				sendErrorResponse('Unauthorized! please check the user query param', res);
-			}else{
-				isPermitedRequest(options, req, res, next, addRequest);
-			}		
-		}, 
-		responseTime(function(req, res, time){
-			console.log("respondTime: " + time );						
-		})
-	];
+	callback({
+				Requests : function (req, res, next){
+					if(!req.query){
+						req.query = url.parse(req.url, true).query;
+					}
+					if(!req.query.user){
+						sendErrorResponse('Unauthorized! please check the user query param', res);
+					}else{
+						isPermitedRequest(options, req, res, next, addRequest);
+					}		
+				}, 
+				ResponseTime : responseTime(function(req, res, time){
+					addResponseTime(options, req, res, time);										
+				})
+			});
 
+}
+
+function addResponseTime(options, req, res, time){
+	var propertyUrl = options.datastore +  "agreements/" + req.query.user + "/properties/AVGResponseTime";
+	var property = {
+		id : "AVGResponseTime",
+		metric : "int",
+		scope : "Global",
+		value : time+""
+	}
+	request.post({url: propertyUrl, body : JSON.stringify(property), headers:{'Content-Type':'application/json'}}, function(error, response, body){
+		if(!error){
+			console.log("AVGResponseTime property has been updated.");
+		}else{
+			console.log("Has occurred an error while it tried update AVGResponseTime property");
+		}
+	});
 }
 
 function isPermitedRequest(options, req, res, next, callback){
@@ -42,7 +59,8 @@ function isPermitedRequest(options, req, res, next, callback){
 		if(!error && response.statusCode == 200 ){
 			console.log(body);
 			if(body === "true"){
-				addRequest(options, req, res, next);
+				next();	
+				callback(options, req, res, next);
 			}else{
 				sendErrorResponse('Unauthorized! please check your SLA.', res);
 			}			
@@ -64,7 +82,7 @@ function addRequest(options, req, res, next){
 			request.post({url: propertyUrl, body : JSON.stringify(property), headers:{'Content-Type':'application/json'}}, function(error, response, body){
 				if(!error){
 					console.log("Requests property has been updated.");
-					next();			
+							
 				}else{
 					console.log("Has occurred an error while it tried update Requests property");
 				}
