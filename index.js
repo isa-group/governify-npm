@@ -3,9 +3,9 @@ var request = require('request');
 var url = require('url');
 var responseTime = require('response-time');
 
-var governify = Object();
+var governify = new Object();
 
-governify.control = function(opt, callback){
+governify.control = function(opt, app){
 
 	//default options.
 	var options = {
@@ -13,26 +13,45 @@ governify.control = function(opt, callback){
 	}
 
 	//modify default options.
-	if(options)
+	if(opt)
 		options = opt;
-
 	// return middleware function
-	callback({
-				Requests : function (req, res, next){
-					if(!req.query){
-						req.query = url.parse(req.url, true).query;
-					}
-					if(!req.query.user){
-						sendErrorResponse('Unauthorized! please check the user query param', res);
-					}else{
-						isPermitedRequest(options, req, res, next, addRequest);
-					}		
-				}, 
-				ResponseTime : responseTime(function(req, res, time){
-					addResponseTime(options, req, res, time);										
-				})
-			});
+	if (app.route){
+		app.use(responseTime( function(req, res, time){
+			addResponseTime(options, req, res, time);										
+		}));
 
+		app.use(function (req, res, next){
+			if(!req.query){
+				req.query = url.parse(req.url, true).query;
+			}
+			if(!req.query.user){
+				sendErrorResponse('Unauthorized! please check the user query param', res);
+			}else{
+				isPermitedRequest(options, req, res, next, addRequest);
+			}		
+		});
+
+	}else{
+
+		app({
+			Requests: function (req, res, next){
+				if(!req.query){
+					req.query = url.parse(req.url, true).query;
+				}
+				if(!req.query.user){
+					sendErrorResponse('Unauthorized! please check the user query param', res);
+				}else{
+					isPermitedRequest(options, req, res, next, addRequest);
+				}		
+			},
+			ResponseTime: responseTime( function(req, res, time){
+				addResponseTime(options, req, res, time);										
+			})
+		});
+
+	}
+	
 }
 
 function addResponseTime(options, req, res, time){
@@ -45,6 +64,7 @@ function addResponseTime(options, req, res, time){
 	}
 	request.post({url: propertyUrl, body : JSON.stringify(property), headers:{'Content-Type':'application/json'}}, function(error, response, body){
 		if(!error){
+			//console.log("time: " +time);
 			console.log("AVGResponseTime property has been updated.");
 		}else{
 			console.log("Has occurred an error while it tried update AVGResponseTime property");
@@ -62,6 +82,7 @@ function isPermitedRequest(options, req, res, next, callback){
 				next();	
 				callback(options, req, res, next);
 			}else{
+				console.log(body);
 				sendErrorResponse('Unauthorized! please check your SLA.', res);
 			}			
 		}else{

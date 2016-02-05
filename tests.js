@@ -7,13 +7,7 @@ var options = {
 	datastore: "http://datastore.governify.io/api/v5/"
 };
 
-governify.control(options, function(terms){
-	
-	app.use(terms.Requests);
-
-	app.use(terms.ResponseTime);	
-
-});
+governify.control(options, app);
 
 var birds = [
 	{
