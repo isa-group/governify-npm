@@ -19,7 +19,7 @@ var express = require('express');
 var app = express();
 
 var options = {
-	datastore: "http://datastore.governify.io/api/v5/"
+	datastore: "http://datastore.governify.io/api/v6/default/"
 };
 
 governify.control(app, options);
