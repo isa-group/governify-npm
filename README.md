@@ -1,6 +1,6 @@
 #Governify-NPM 
 
-The node module to construct SLA-driven API using [Governify](http://governify.io) tools. This module is a middleware which you can use on [ExpressJS](http://expressjs.com/es/) or [ConnectJS](https://github.com/senchalabs/connect).
+The node module to control API using [Governify](http://governify.io) tools. This module is a middleware which you can use on [ExpressJS](http://expressjs.com/es/) or [ConnectJS](https://github.com/senchalabs/connect).
 
 ##Intallation
 On your application package run next command:
@@ -10,6 +10,8 @@ $ node npm install governify
 ```
 
 ##Example
+To control the api you must use ```governify.control(app, [options])```
+
 ```
 var governify = require('governify');
 var express = require('express');
@@ -20,7 +22,7 @@ var options = {
 	datastore: "http://datastore.governify.io/api/v5/"
 };
 
-governify.control(options, app);
+governify.control(app, options);
 
 var birds = [
 	{

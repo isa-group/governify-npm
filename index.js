@@ -5,11 +5,11 @@ var responseTime = require('response-time');
 
 var governify = new Object();
 
-governify.control = function(opt, app){
+governify.control = function(app, opt){
 
 	//default options.
 	var options = {
-		datastore : "http://datastare.governify.io/api/v5/"
+		datastore : "http://datastare.governify.io/api/v6/default/"
 	}
 
 	//modify default options.
