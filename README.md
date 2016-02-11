@@ -1,5 +1,8 @@
 #Governify-NPM 
 
+> This is BETA module and may have bugs and don't work correctly. 
+> It is intended for qualified beta testers only and must not be used in production systems.
+
 The node module to control API using [Governify](http://governify.io) tools. This module is a middleware which you can use on [ExpressJS](http://expressjs.com/es/) or [ConnectJS](https://github.com/senchalabs/connect).
 
 ##Intallation
