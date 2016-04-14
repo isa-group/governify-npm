@@ -1,31 +1,33 @@
-#Governify-NPM 
+# Governify-NPM 
 
 > This is BETA module and may have bugs and don't work correctly. 
 > It is intended for qualified beta testers only and must not be used in production systems.
 
 The node module to control API using [Governify](http://governify.io) tools. This module is a middleware which you can use on [ExpressJS](http://expressjs.com/es/) or [ConnectJS](https://github.com/senchalabs/connect).
 
-##Intallation
+## Intallation
 On your application package run next command:
 
 ```
-$ node npm install governify
+$ npm install governify
 ```
 
-##Example
+## Example
 To control the api you must use ```governify.control(app, [options])```
 
 ```
 var governify = require('governify');
 var express = require('express');
-
 var app = express();
+var port = 9999;
 
-var options = {
-	datastore: "http://datastore.governify.io/api/v6/default/"
-};
+governify.control(app, { 
 
-governify.control(app, options);
+	datastore: "http://datastore.governify.io/api/v6.1",
+	namespace: "default",
+	path: "/api"
+
+});
 
 var birds = [
 	{
@@ -43,12 +45,12 @@ app.get("/api/v1/birds", function(req, res){
 	res.end();
 });
 
-app.listen(9999, function(){
-	console.log("App listening on port: ", 9999);
+app.listen(port, function(){
+	console.log("App listening on port: ", port);
 });
 ```
 
 **NOTE:** You must do requests with ```?user=:client_id```. For example: 
 ```
-curl -X GET http://localhost:9999/api/v1/birds?user=ppm
+curl -X GET http://localhost:9999/api/v1/birds?user=proUser1
 ``` 

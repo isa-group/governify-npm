@@ -24,10 +24,13 @@
   "homepage": "https://github.com/isa-group/governify-npm#readme",
   "dependencies": {
     "request": "^2.69.0",
-    "response-time": "^2.3.1"
+    "response-time": "^2.3.1",
+    "winston": "^2.2.0"
   },
   "devDependencies": {
+    "chai": "^3.5.0",
     "connect": "^3.4.1",
-    "express": "^4.13.4"
+    "express": "^4.13.4",
+    "mocha": "^2.4.5"
   }
 }
