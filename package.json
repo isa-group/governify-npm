@@ -1,6 +1,6 @@
 {
   "name": "governify",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "App Middleware to control api's by SLA using AML",
   "main": "index.js",
   "scripts": {
