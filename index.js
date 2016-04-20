@@ -16,6 +16,7 @@ governify.control = function(app, opt){
 	var options = {
 		datastore : "http://datastore.governify.io/api/v6.1/",
 		namespace: "default/",
+		apiKeyVariable: "apikey",
 		path: "/",
 		terms: {
 			requests: "RequestTerm"
@@ -40,7 +41,7 @@ governify.control = function(app, opt){
 			if(!req.query){
 				req.query = url.parse(req.url, true).query;
 			}
-			if(!req.query.user){
+			if(!req.query[options.apiKeyVariable]){
 				sendErrorResponse('Unauthorized! please check the user query param', res);
 			}else{
 				isPermitedRequest(options, req, res, next, addRequest);
@@ -56,7 +57,7 @@ governify.control = function(app, opt){
 }
 
 function addResponseTime(options, req, res, time){
-	var propertyUrl = options.datastore + options.namespace +  "agreements/" + req.query.user + "/properties/" + options.properties.responseTime;
+	var propertyUrl = options.datastore + options.namespace +  "agreements/" + req.query[options.apiKeyVariable] + "/properties/" + options.properties.responseTime;
 	var property = {
 		id : options.properties.responseTime,
 		metric : "int",
@@ -79,7 +80,7 @@ function addResponseTime(options, req, res, time){
 function isPermitedRequest(options, req, res, next, callback){
 	logger.info("Checking if isPermitedRequest...");
 
-	var propertyUrl = options.datastore + options.namespace +  "agreements/" + req.query.user + "/guarantees/" + options.terms.requests;
+	var propertyUrl = options.datastore + options.namespace +  "agreements/" + req.query[options.apiKeyVariable] + "/guarantees/" + options.terms.requests;
 	request(propertyUrl, function(error, response, body){
 		if(!error && response.statusCode == 200 ){
 			logger.info(body);
@@ -98,7 +99,7 @@ function isPermitedRequest(options, req, res, next, callback){
 }
 
 function addRequest(options, req, res, next){
-	var propertyUrl = options.datastore + options.namespace + "agreements/" + req.query.user + "/properties/" + options.properties.requests ;
+	var propertyUrl = options.datastore + options.namespace + "agreements/" + req.query[options.apiKeyVariable] + "/properties/" + options.properties.requests ;
 
 	request(propertyUrl, function(error, response, body){
 		if(!error && response.statusCode == 200 ){
@@ -140,6 +141,8 @@ function applyOptionsPolicy(options, opt){
 			options.namespace = opt.namespace;
 		if(opt.path)
 			options.path = opt.path;
+		if(opt.apiKeyVariable)
+			options.apiKeyVariable = opt.apiKeyVariable;
 		if(opt.terms){
 			for(var term in options.terms){
 				if(opt.terms[term])

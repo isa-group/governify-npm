@@ -49,7 +49,7 @@ describe('Express Tests', function() {
     
   	describe('Authorized requests', function(){
     		it('#Using proUser1', function(done){
-    			request('http://localhost:'+port+'/api/v1/birds?user=proUser1',function(error, response, body){
+    			request('http://localhost:'+port+'/api/v1/birds?apikey=proUser1',function(error, response, body){
     				expect(response.statusCode).to.equal(200);
   				done();
     			});			
@@ -91,7 +91,7 @@ describe('Connect Tests', function() {
     
     describe('Authorized requests', function(){
         it('#Using proUser1', function(done){
-          request('http://localhost:'+port+'/api/v1/birds?user=proUser1',function(error, response, body){
+          request('http://localhost:'+port+'/api/v1/birds?apikey=proUser1',function(error, response, body){
             expect(response.statusCode).to.equal(200);
             done();
           });     
