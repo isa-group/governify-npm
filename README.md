@@ -60,7 +60,7 @@ curl -X GET http://localhost:9999/api/v1/birds?apikey=proUser1
 | Field Name | Type          | Description  |
 | :--------- | :------------:| :------------|
 | **datastore** | `string`| **Required** This is the endpoint URL where the service that stores and analyzes the agreement is located. **NOTE:** You can use our [datastore](http://datastore.governify.io/), Using by default datastore.  |
-| **namespace**   | `string`| **Optional** This field can be used to make out two type of agreement or two type of service, e.g. if you have two services named "api1" and "api2" you can store, analyze and check by different namespaces. By default: `""` |
+| **namespace**   | `string`| **Optional** This field can be used to make out two type of agreement or two type of service, e.g. if you have two services named "api1" and "api2" you can store, analyze and check by different namespaces. By default: `"default"` |
 | **apiKeyVariable**    | `string` | **Optional** This field defines the name of url param which will be checked and that will contain the key to identify the agreement of current request. By default: `"apikey"`|
 | **path** | `string`| **Optional**  This field defines the path from which the filter will be applied. By default: `"/"` |
 

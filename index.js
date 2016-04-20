@@ -15,7 +15,7 @@ governify.control = function(app, opt){
 	//default options.
 	var options = {
 		datastore : "http://datastore.governify.io/api/v6.1/",
-		namespace: "default/",
+		namespace: "default",
 		apiKeyVariable: "apikey",
 		path: "/",
 		terms: {
@@ -42,7 +42,7 @@ governify.control = function(app, opt){
 				req.query = url.parse(req.url, true).query;
 			}
 			if(!req.query[options.apiKeyVariable]){
-				sendErrorResponse('Unauthorized! please check the user query param', res);
+				sendErrorResponse(401, 'Unauthorized! please check the user query param', res);
 			}else{
 				isPermitedRequest(options, req, res, next, addRequest);
 			}		
@@ -89,10 +89,10 @@ function isPermitedRequest(options, req, res, next, callback){
 				next();	
 				callback(options, req, res, next);
 			}else{
-				sendErrorResponse('Unauthorized! please check your SLA.', res);
+				sendErrorResponse(429, 'Unauthorized! Too many requests.', res);
 			}			
 		}else{
-			sendErrorResponse('Unauthorized! please check your SLA.', res)
+			sendErrorResponse(402, 'Unauthorized! please check your SLA.', res)
 		}
 	});
 
@@ -121,13 +121,16 @@ function addRequest(options, req, res, next){
 }
 
 //add suppot to Connect, modifing returned options
-function sendErrorResponse(message, res){
+function sendErrorResponse(code, message, res){
+	var error = new Object();
+	error.code = code;
+	error.message = message;
 	try{
-		res.status(401)
-		res.send(message);
+		res.status(code);
+		res.send(JSON.stringify(error, true));
 	}catch(err){
-		res.statusCode = 401;
-		res.end(message);
+		res.statusCode = code;
+		res.end(JSON.stringify(error, true));
 	}
 }
 

@@ -39,12 +39,19 @@ describe('Express Tests', function() {
 
   	// test cases
   	describe('UnAuthorized requests', function(){
-  		it('#because it has not user', function(done){
+  		it('#because the request has not key param', function(done){
   			request('http://localhost:'+port+'/api/v1/birds',function(error, response, body){
   				expect(response.statusCode).to.equal(401);
 				done();
   			});			
 		  });
+
+      it('#because the key has not exist', function(done){
+        request('http://localhost:'+port+'/api/v1/birds?apikey=er',function(error, response, body){
+          expect(response.statusCode).to.equal(402);
+        done();
+        });     
+      });
 	  });
     
   	describe('Authorized requests', function(){
@@ -81,10 +88,17 @@ describe('Connect Tests', function() {
 
     // test cases
     describe('UnAuthorized requests', function(){
-      it('#because it has not user', function(done){
+      it('#because the request has not key param', function(done){
         request('http://localhost:'+port+'/api/v1/birds',function(error, response, body){
           expect(response.statusCode).to.equal(401);
           done();
+        });     
+      });
+
+      it('#because the key has not exist', function(done){
+        request('http://localhost:'+port+'/api/v1/birds?apikey=er',function(error, response, body){
+          expect(response.statusCode).to.equal(402);
+        done();
         });     
       });
     });
