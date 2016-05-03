@@ -1,7 +1,6 @@
 'use strict'
 var request = require('request');
 var express = require('express');
-var onHeaders = require('on-headers')
 
 var logger = require('winston');
 logger.default.transports.console.timestamp = true;
