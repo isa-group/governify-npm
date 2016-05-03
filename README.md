@@ -25,7 +25,21 @@ governify.control(app, options = {
 	datastore: "http://datastore.governify.io/api/v6.1",
 	namespace: "default",
 	apiKeyVariable: "apikey",
-	path: "/api"
+	defaultPath: "/api",
+	customMetrics: [
+		{
+			path: "/api",
+			method: "POST",
+			term: 'ResourcesTerm',
+			metric: 'Resources',
+			calculate: function(req, res, callback){
+				//asynchronousCalculation
+				callback( 4 );
+				//synchronous
+				return 4
+			}
+		}
+	]
 });
 
 var birds = [
@@ -62,7 +76,21 @@ curl -X GET http://localhost:9999/api/v1/birds?apikey=proUser1
 | **datastore** | `string`| **Required** This is the endpoint URL where the service that stores and analyzes the agreement is located. **NOTE:** You can use our [datastore](http://datastore.governify.io/), Using by default datastore.  |
 | **namespace**   | `string`| **Optional** This field can be used to make out two type of agreement or two type of service, e.g. if you have two services named "api1" and "api2" you can store, analyze and check by different namespaces. By default: `"default"` |
 | **apiKeyVariable**    | `string` | **Optional** This field defines the name of url param which will be checked and that will contain the key to identify the agreement of current request. By default: `"apikey"`|
-| **path** | `string`| **Optional**  This field defines the path from which the filter will be applied. By default: `"/"` |
+| **defaultPath** | `string`| **Optional**  This field defines the default path that is used by middleware for metrics without path field. By default: `"/"` |
+| **customMetrics** | `[metricObject]`| **Optional**  This field defines the middelwares to control term with custom metrics |
+
+
+## <a name="metricsObject"></a> Matric object
+
+This object defines fileds to create a middleware and to assosiate an agreement term to it. 
+
+| Field Name | Type          | Description  |
+| :--------- | :------------:| :------------|
+| **path** | `string`| **Required** Path over the middleware is applicated. |
+| **method**   | `string`| **Optional** Method over the middleware is applicated. |
+| **term**    | `string` | **Optional** Middleware is assosiated to this term, that must be specified on the SLA. |
+| **metric** | `string`| **Optional**  The metric that will be update by this middleware. |
+| **calculate** | `[metricObject]`| **Optional** This is a function that calculates the value of metric. If you need to calculate it asynchronous you must use: callback(value), else you use: return value. |
 
 
 #### Example
@@ -75,7 +103,21 @@ curl -X GET http://localhost:9999/api/v1/birds?apikey=proUser1
 	datastore: "http://datastore.governify.io/api/v6.1",
 	namespace: "default",
 	apiKeyVariable: "apikey",
-	path: "/api"
+	path: "/api",
+	customMetrics: [
+		{
+			path: "/api",
+			method: "POST",
+			term: 'ResourcesTerm',
+			metric: 'Resources',
+			calculate: function(actualValue, req, res, callback){
+				//asynchronousCalculation
+				db.find({}, function(contact){
+					callback( contact.lenght );
+				});				
+			}
+		}
+	]
 }
 
 ```
@@ -86,11 +128,13 @@ curl -X GET http://localhost:9999/api/v1/birds?apikey=proUser1
 curl -X GET http://localhost:9999/api/v1/birds?apikey=proUser1
 ``` 
 
-And the URL that will be used to check if *"key"* is authorized is:
+The URL that will be used to check if *"key"* is authorized is:
 
 ```
 http://datastore.governify.io/api/v6.1/default/agreements/proUser1
 ``` 
+
+And `customMetrics` creates a middleware that checks if ResourceTerm is fulfilled and updates the Resources metric with the value that is calculated asynchronously.
 
 * **Example 2**
 
@@ -100,7 +144,19 @@ http://datastore.governify.io/api/v6.1/default/agreements/proUser1
 	datastore: "http://datastore.governify.io/api/v6.1",
 	namespace: "service1",
 	apiKeyVariable: "user",
-	path: "/api"
+	path: "/api",
+	customMetrics: [
+		{
+			path: "/api",
+			method: "POST",
+			term: 'RequestTerm',
+			metric: 'Requests',
+			calculate: function(actualValue, req, res, callback){
+				//synchronousCalculation
+				return actualValue + 1;			
+			}
+		}
+	]
 }
 
 ```
@@ -111,8 +167,10 @@ http://datastore.governify.io/api/v6.1/default/agreements/proUser1
 curl -X GET http://localhost:9999/api/v1/birds?user=proUser1
 ``` 
 
-And the URL that will be used to check if *"key"* is authorized is:
+The URL that will be used to check if *"key"* is authorized is:
 
 ```
 http://datastore.governify.io/api/v6.1/service1/agreements/proUser1
 ``` 
+
+And `customMetrics` creates a middleware that checks if RequestTerm is fulfilled and updates the Requests metric with the value that is calculated synchronously.

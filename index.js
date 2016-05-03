@@ -1,6 +1,7 @@
 'use strict'
 var request = require('request');
 var express = require('express');
+var onHeaders = require('on-headers')
 
 var logger = require('winston');
 logger.default.transports.console.timestamp = true;
@@ -17,21 +18,17 @@ governify.control = function(app, opt){
 		datastore : "http://datastore.governify.io/api/v6.1/",
 		namespace: "default",
 		apiKeyVariable: "apikey",
-		path: "/api"
-		//customMetrics: [
-			//{
-				//path: "/api",
-				//method: "POST",
-				//term: 'RequestTerm',
-				//metric: 'Requests',
-				//calculate: function(req, res, callback){
+		defaultPath: "/",
+		metrics: [
+			{
+				term: 'RequestTerm',
+				metric: 'Requests',
+				calculate: function(actualValue, req, res, callback){
 					//asyncronousCalculation
-					//callback( 12+'' );
-					//syncronous
-					//return 12+'';
-				//}
-			//}
-		//]
+					callback( parseInt(actualValue) + 1 );
+				}
+			}
+		]
 	}
 
 	//update good options
@@ -40,24 +37,22 @@ governify.control = function(app, opt){
 	//return middleware function
 	try{
 
-		app.use(options.path, responseTime( function(req, res, time){
+		//add middleware for calculate response time
+		app.use(options.defaultPath, responseTime(function(req, res, time){
 			addResponseTime(options, req, res, time);										
 		}));
-		
-		app.use(options.path, function (req, res, next){
-			if(!req.query){
-				req.query = url.parse(req.url, true).query;
-			}
-			if(!req.query[options.apiKeyVariable]){
-				sendErrorResponse(401, 'Unauthorized! please check the user query param', res);
-			}else{
-				isPermitedRequest(options, req, res, next, addRequest);
-			}		
-		});
 
-		for(var m in options.customMetrics){
-			var metric = options.customMetrics[m];
-			app.use(metric.path, guaranteeIsComplied(options, metric.term, metric.metric, metric.calculate));
+		//add middleware for check SLA 
+		for(var m in options.metrics){
+			var metric = options.metrics[m];
+			if(metric.term)
+				app.use(metric.path, guaranteeIsComplied(options, metric.term, metric.metric, metric.method, metric.calculate));
+		}
+
+		//add middleware for update Metrics
+		for(var m in options.metrics ){
+			var metric = options.metrics[m];
+			app.use(metric.path, updateVariable(options, metric.metric, metric.method, metric.calculate));
 		}
 
 	}catch(e){
@@ -65,45 +60,83 @@ governify.control = function(app, opt){
 		throw "The app param must be an expressJS or connectJS middleware app." + e;
 
 	}
-	
 }
 
-function guaranteeIsComplied(options, term, metric, calculate){
-	console.log("create middleware");
+function guaranteeIsComplied(options, term, metric, method, calculate){
+	logger.info("Created middleware to control " + term + " term");
 	return function(req, res, next){
+		if(req.method == method || method == ""){
+			logger.info("Checking if " + term + " is fulfilled...");
+			if(!req.query){
+				req.query = url.parse(req.url, true).query;
+			}
+			if(!req.query[options.apiKeyVariable]){
+				sendErrorResponse(401, 'Unauthorized! please check the user query param', res);
+			}else{
+				var propertyUrl = options.datastore + options.namespace +  "agreements/" + req.query[options.apiKeyVariable] + "/guarantees/" + term;
+				request(propertyUrl, function(error, response, body){
+					if(!error && response.statusCode == 200 ){
+						logger.info(body);
 
-		logger.info("Checking if " + term + " is complied...");
-		if(!req.query){
-			req.query = url.parse(req.url, true).query;
-		}
-		if(!req.query[options.apiKeyVariable]){
-			sendErrorResponse(401, 'Unauthorized! please check the user query param', res);
-		}else{
-			var propertyUrl = options.datastore + options.namespace +  "agreements/" + req.query[options.apiKeyVariable] + "/guarantees/" + term;
-			request(propertyUrl, function(error, response, body){
-				if(!error && response.statusCode == 200 ){
-					logger.info(body);
+						if(body === "true"){
+							next();	
 
-					if(body === "true"){
-						next();	
-						//actualizeVariable
-						updateVariable(options, req, res, metric, calculate);
-
+						}else{
+							sendErrorResponse(429, 'Unauthorized! Too many requests.', res);
+						}			
 					}else{
-						sendErrorResponse(429, 'Unauthorized! Too many requests.', res);
-					}			
-				}else{
-					sendErrorResponse(402, 'Unauthorized! please check your SLA.', res)
-				}
-			});
-		} 
+						sendErrorResponse(402, 'Unauthorized! please check your SLA.', res)
+					}
+				});
+			} 
+		}else{
+			next();
+		}
 	}
 }
 
+function updateVariable(options, metric, method, calculate){
+	logger.info("Created middleware to update " + metric + " metric");
+	return function(req, res, next){
+		if(req.method == method || method == ""){
+			if(!req.query){
+				req.query = url.parse(req.url, true).query;
+			}
+			if(!req.query[options.apiKeyVariable]){
+				sendErrorResponse(401, 'Unauthorized! please check the user query param', res);
+			}else{
+				var propertyUrl = options.datastore + options.namespace + "agreements/" + req.query[options.apiKeyVariable] + "/properties/" + metric;
+				next();
+				request(propertyUrl, function(error, response, body){
+					if(!error && response.statusCode == 200 ){
+						var property = JSON.parse(body);
+
+						calculate(property.value, req, res, function(value){
+							property.value = value + '';
+							request.post({url: propertyUrl, body : JSON.stringify(property), headers:{'Content-Type':'application/json'}}, function(error, response, body){
+								if(!error){
+									logger.info(metric.toUpperCase() + " property has been updated.");							
+								}else{
+									logger.info("Has occurred an error while it tried update " + metric + " property.");
+								}
+							});
+						});
+
+					}else{
+						logger.info("No data, please check your SLA.");
+					}
+				});
+			}
+		}else{
+			next();
+		}
+	}	
+}
+
 function addResponseTime(options, req, res, time){
-	var propertyUrl = options.datastore + options.namespace +  "agreements/" + req.query[options.apiKeyVariable] + "/properties/" + options.properties.responseTime;
+	var propertyUrl = options.datastore + options.namespace +  "agreements/" + req.query[options.apiKeyVariable] + "/properties/" + "AVGResponseTime";
 	var property = {
-		id : options.properties.responseTime,
+		id : "AVGResponseTime",
 		metric : "int",
 		scope : "Global",
 		value : time+""
@@ -112,81 +145,13 @@ function addResponseTime(options, req, res, time){
 	if(res.statusCode >= 200 && res.statusCode < 300){
 		request.post({url: propertyUrl, body : JSON.stringify(property), headers:{'Content-Type':'application/json'}}, function(error, response, body){
 			if(!error){
-				logger.info(options.properties.responseTime + " property has been updated.");
+				logger.info("AVGResponseTime"+ " property has been updated.");
 			}else{
-				logger.info("Has occurred an error while it tried update " + options.properties.responseTime + " property");
+				logger.info("Has occurred an error while it tried update " + "AVGResponseTime" + " property");
 			}
 		});
 	}
 
-}
-
-function isPermitedRequest(options, req, res, next, callback){
-	logger.info("Checking if isPermitedRequest...");
-
-	var propertyUrl = options.datastore + options.namespace +  "agreements/" + req.query[options.apiKeyVariable] + "/guarantees/" + options.terms.requests;
-	request(propertyUrl, function(error, response, body){
-		if(!error && response.statusCode == 200 ){
-			logger.info(body);
-
-			if(body === "true"){
-				next();	
-				callback(options, req, res, next);
-			}else{
-				sendErrorResponse(429, 'Unauthorized! Too many requests.', res);
-			}			
-		}else{
-			sendErrorResponse(402, 'Unauthorized! please check your SLA.', res)
-		}
-	});
-
-}
-
-function updateVariable(options, req, res, metric, calculate){
-	var propertyUrl = options.datastore + options.namespace + "agreements/" + req.query[options.apiKeyVariable] + "/properties/" + metric;
-
-	request(propertyUrl, function(error, response, body){
-		if(!error && response.statusCode == 200 ){
-			var property = JSON.parse(body);
-
-			calculate(req, res, function(value){
-				property.value = value;
-				request.post({url: propertyUrl, body : JSON.stringify(property), headers:{'Content-Type':'application/json'}}, function(error, response, body){
-					if(!error){
-						logger.info("Requests property has been updated.");							
-					}else{
-						logger.info("Has occurred an error while it tried update Requests property.");
-					}
-				});
-			});
-
-		}else{
-			logger.info("No data, please check your SLA.");
-		}
-	});
-}
-
-
-function addRequest(options, req, res, next){
-	var propertyUrl = options.datastore + options.namespace + "agreements/" + req.query[options.apiKeyVariable] + "/properties/" + options.properties.requests ;
-
-	request(propertyUrl, function(error, response, body){
-		if(!error && response.statusCode == 200 ){
-			var property = JSON.parse(body);
-			property.value = (parseInt(property.value) + 1) + '';
-
-			request.post({url: propertyUrl, body : JSON.stringify(property), headers:{'Content-Type':'application/json'}}, function(error, response, body){
-				if(!error){
-					logger.info("Requests property has been updated.");							
-				}else{
-					logger.info("Has occurred an error while it tried update Requests property.");
-				}
-			});
-
-		}else{
-			logger.info("No data, please check your SLA.");
-		}
-	});
 }
 
 //add suppot to Connect, modifing returned options
@@ -210,23 +175,24 @@ function applyOptionsPolicy(options, opt){
 		if(opt.datastore)
 			options.datastore = opt.datastore;
 		if(opt.namespace)
-			options.namespace = opt.namespace;
-		if(opt.path)
-			options.path = opt.path;
+			options.namespace = opt.namespace;	
 		if(opt.apiKeyVariable)
 			options.apiKeyVariable = opt.apiKeyVariable;
-		if(opt.terms){
-			for(var term in options.terms){
-				if(opt.terms[term])
-					options.terms[term] = opt.terms[term];
+		if(opt.defaultPath)
+			options.defaultPath = opt.defaultPath;
+		if(opt.customMetrics){
+			for(var m in opt.customMetrics){
+				options.metrics.push(opt.customMetrics[m]);
 			}
-		}			
-		if(opt.properties){
-			for(var prop in options.properties){
-				if(opt.properties[prop])
-					options.properties[prop] = opt.properties[prop];
-			}		
-		}			
+		}
+
+		for(var m in options.metrics){
+			if(!options.metrics[m].path)
+				options.metrics[m].path = options.defaultPath;
+			if(!options.metrics[m].method)
+				options.metrics[m].method = "";
+		}
+		
 	}
 
 	//add "/" to end url.
