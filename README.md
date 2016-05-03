@@ -90,7 +90,7 @@ This object defines fileds to create a middleware and to assosiate an agreement 
 | **method**   | `string`| **Optional** Method over the middleware is applicated. |
 | **term**    | `string` | **Optional** Middleware is assosiated to this term, that must be specified on the SLA. |
 | **metric** | `string`| **Optional**  The metric that will be update by this middleware. |
-| **calculate** | `[metricObject]`| **Optional** This is a function that calculates the value of metric. If you need to calculate it asynchronous you must use: callback(value), else you use: return value. |
+| **calculate** | `Function`| **Optional** This is a function that calculates the value of metric. If you need to calculate it asynchronous you must use: callback(value), else you use: return value. |
 
 
 #### Example
