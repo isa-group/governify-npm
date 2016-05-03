@@ -80,7 +80,7 @@ curl -X GET http://localhost:9999/api/v1/birds?apikey=proUser1
 | **customMetrics** | `[metricObject]`| **Optional**  This field defines the middelwares to control term with custom metrics |
 
 
-## <a name="metricsObject"></a> Matric object
+## <a name="metricsObject"></a> Metric object
 
 This object defines fileds to create a middleware and to assosiate an agreement term to it. 
 
