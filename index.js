@@ -17,14 +17,21 @@ governify.control = function(app, opt){
 		datastore : "http://datastore.governify.io/api/v6.1/",
 		namespace: "default",
 		apiKeyVariable: "apikey",
-		path: "/",
-		terms: {
-			requests: "RequestTerm"
-		},
-		properties: {
-			requests: "Requests",
-			responseTime: "AVGResponseTime"
-		}
+		path: "/api"
+		//customMetrics: [
+			//{
+				//path: "/api",
+				//method: "POST",
+				//term: 'RequestTerm',
+				//metric: 'Requests',
+				//calculate: function(req, res, callback){
+					//asyncronousCalculation
+					//callback( 12+'' );
+					//syncronous
+					//return 12+'';
+				//}
+			//}
+		//]
 	}
 
 	//update good options
@@ -36,7 +43,7 @@ governify.control = function(app, opt){
 		app.use(options.path, responseTime( function(req, res, time){
 			addResponseTime(options, req, res, time);										
 		}));
-
+		
 		app.use(options.path, function (req, res, next){
 			if(!req.query){
 				req.query = url.parse(req.url, true).query;
@@ -48,12 +55,49 @@ governify.control = function(app, opt){
 			}		
 		});
 
+		for(var m in options.customMetrics){
+			var metric = options.customMetrics[m];
+			app.use(metric.path, guaranteeIsComplied(options, metric.term, metric.metric, metric.calculate));
+		}
+
 	}catch(e){
 
-		throw "The app param must be an expressJS or connectJS middleware app.";
+		throw "The app param must be an expressJS or connectJS middleware app." + e;
 
 	}
 	
+}
+
+function guaranteeIsComplied(options, term, metric, calculate){
+	console.log("create middleware");
+	return function(req, res, next){
+
+		logger.info("Checking if " + term + " is complied...");
+		if(!req.query){
+			req.query = url.parse(req.url, true).query;
+		}
+		if(!req.query[options.apiKeyVariable]){
+			sendErrorResponse(401, 'Unauthorized! please check the user query param', res);
+		}else{
+			var propertyUrl = options.datastore + options.namespace +  "agreements/" + req.query[options.apiKeyVariable] + "/guarantees/" + term;
+			request(propertyUrl, function(error, response, body){
+				if(!error && response.statusCode == 200 ){
+					logger.info(body);
+
+					if(body === "true"){
+						next();	
+						//actualizeVariable
+						updateVariable(options, req, res, metric, calculate);
+
+					}else{
+						sendErrorResponse(429, 'Unauthorized! Too many requests.', res);
+					}			
+				}else{
+					sendErrorResponse(402, 'Unauthorized! please check your SLA.', res)
+				}
+			});
+		} 
+	}
 }
 
 function addResponseTime(options, req, res, time){
@@ -97,6 +141,31 @@ function isPermitedRequest(options, req, res, next, callback){
 	});
 
 }
+
+function updateVariable(options, req, res, metric, calculate){
+	var propertyUrl = options.datastore + options.namespace + "agreements/" + req.query[options.apiKeyVariable] + "/properties/" + metric;
+
+	request(propertyUrl, function(error, response, body){
+		if(!error && response.statusCode == 200 ){
+			var property = JSON.parse(body);
+
+			calculate(req, res, function(value){
+				property.value = value;
+				request.post({url: propertyUrl, body : JSON.stringify(property), headers:{'Content-Type':'application/json'}}, function(error, response, body){
+					if(!error){
+						logger.info("Requests property has been updated.");							
+					}else{
+						logger.info("Has occurred an error while it tried update Requests property.");
+					}
+				});
+			});
+
+		}else{
+			logger.info("No data, please check your SLA.");
+		}
+	});
+}
+
 
 function addRequest(options, req, res, next){
 	var propertyUrl = options.datastore + options.namespace + "agreements/" + req.query[options.apiKeyVariable] + "/properties/" + options.properties.requests ;
