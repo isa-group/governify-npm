@@ -1,4 +1,4 @@
-# Governify-NPM 
+# Governify-npm
 
 > This is BETA module and may have bugs and don't work correctly. 
 > It is intended for qualified beta testers only and must not be used in production systems.
@@ -34,9 +34,9 @@ governify.control(app, options = {
 			metric: 'Resources',
 			calculate: function(req, res, callback){
 				//asynchronousCalculation
-				callback( 4 );
+				callback( birds.length );
 				//synchronous
-				return 4
+				return birds.length;
 			}
 		}
 	]
@@ -73,11 +73,11 @@ curl -X GET http://localhost:9999/api/v1/birds?apikey=proUser1
 
 | Field Name | Type          | Description  |
 | :--------- | :------------:| :------------|
-| **datastore** | `string`| **Required** This is the endpoint URL where the service that stores and analyzes the agreement is located. **NOTE:** You can use our [datastore](http://datastore.governify.io/), Using by default datastore.  |
+| **datastore** | `string`| **Optional** This is the endpoint URL where the service that stores and analyzes the agreement is located. **NOTE:** If you want to use our [datastore](http://datastore.governify.io/), you haven't to give value to this field and the module is going to use datastore by default.  |
 | **namespace**   | `string`| **Optional** This field can be used to make out two type of agreement or two type of service, e.g. if you have two services named "api1" and "api2" you can store, analyze and check by different namespaces. By default: `"default"` |
 | **apiKeyVariable**    | `string` | **Optional** This field defines the name of url param which will be checked and that will contain the key to identify the agreement of current request. By default: `"apikey"`|
 | **defaultPath** | `string`| **Optional**  This field defines the default path that is used by middleware for metrics without path field. By default: `"/"` |
-| **customMetrics** | `[metricObject]`| **Optional**  This field defines the middelwares to control term with custom metrics |
+| **customMetrics** | `[metricObject](#metricsObject)`| **Optional**  This field defines the middelwares to control term with custom metrics |
 
 
 ## <a name="metricsObject"></a> Metric object
@@ -86,7 +86,7 @@ This object defines fileds to create a middleware and to assosiate an agreement 
 
 | Field Name | Type          | Description  |
 | :--------- | :------------:| :------------|
-| **path** | `string`| **Required** Path over the middleware is applicated. |
+| **path** | `string`| **Optional** Path over the middleware is applicated. |
 | **method**   | `string`| **Optional** Method over the middleware is applicated. |
 | **term**    | `string` | **Optional** Middleware is assosiated to this term, that must be specified on the SLA. |
 | **metric** | `string`| **Optional**  The metric that will be update by this middleware. |
