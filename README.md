@@ -32,7 +32,7 @@ governify.control(app, options = {
 			method: "POST",
 			term: 'ResourcesTerm',
 			metric: 'Resources',
-			calculate: function(req, res, callback){
+			calculate: function(currentValue, req, res, callback){
 				//asynchronousCalculation
 				callback( birds.length );
 				//synchronous
