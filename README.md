@@ -1,6 +1,6 @@
 # Governify-npm
 
-> This is BETA module and may have bugs and don't work correctly. 
+> This is BETA module and may have bugs and don't work correctly.
 > It is intended for qualified beta testers only and must not be used in production systems.
 
 The node module to control API using [Governify](http://governify.io) tools. This module is a middleware which you can use on [ExpressJS](http://expressjs.com/es/) or [ConnectJS](https://github.com/senchalabs/connect).
@@ -28,15 +28,19 @@ governify.control(app, options = {
 	defaultPath: "/api",
 	customMetrics: [
 		{
-			path: "/api",
-			method: "POST",
-			term: 'ResourcesTerm',
-			metric: 'Resources',
+			method: 'POST,GET',
+			term: 'RequestTerm',
+			metric: 'Requests',
 			calculate: function(currentValue, req, res, callback){
-				//asynchronousCalculation
-				callback( birds.length );
-				//synchronous
-				return birds.length;
+				//asyncronousCalculation
+				callback( parseInt(actualValue) + 1 );
+			}
+		},
+		{
+			metric: 'AVGResponseTime',
+			calculate: function(currentValue, req, res, callback){
+				//asyncronousCalculation
+				callback( res._headers['x-response-time'] );
 			}
 		}
 	]
@@ -63,10 +67,10 @@ app.listen(port, function(){
 });
 ```
 
-**NOTE:** You must do requests with ```?apikey=:key```. For example: 
+**NOTE:** You must do requests with ```?apikey=:key```. For example:
 ```
 curl -X GET http://localhost:9999/api/v1/birds?apikey=proUser1
-``` 
+```
 
 ## <a name="optionsObject"></a> Options object
 
@@ -82,7 +86,7 @@ curl -X GET http://localhost:9999/api/v1/birds?apikey=proUser1
 
 ## <a name="metricsObject"></a> Metric object
 
-This object defines fileds to create a middleware and to assosiate an agreement term to it. 
+This object defines fileds to create a middleware and to assosiate an agreement term to it.
 
 | Field Name | Type          | Description  |
 | :--------- | :------------:| :------------|
@@ -110,7 +114,7 @@ This object defines fileds to create a middleware and to assosiate an agreement 
 			method: "POST",
 			term: 'ResourcesTerm',
 			metric: 'Resources',
-			calculate: function(actualValue, req, res, callback){
+			calculate: function(currentValue, req, res, callback){
 				//asynchronousCalculation
 				db.find({}, function(contact){
 					callback( contact.lenght );
@@ -122,17 +126,17 @@ This object defines fileds to create a middleware and to assosiate an agreement 
 
 ```
 
- On this example you must do request with ```?apikey=:key```. For example: 
+ On this example you must do request with ```?apikey=:key```. For example:
 
 ```
 curl -X GET http://localhost:9999/api/v1/birds?apikey=proUser1
-``` 
+```
 
 The URL that will be used to check if *"key"* is authorized is:
 
 ```
 http://datastore.governify.io/api/v6.1/default/agreements/proUser1
-``` 
+```
 
 And `customMetrics` creates a middleware that checks if ResourceTerm is fulfilled and updates the Resources metric with the value that is calculated asynchronously.
 
@@ -151,7 +155,7 @@ And `customMetrics` creates a middleware that checks if ResourceTerm is fulfille
 			method: "POST",
 			term: 'RequestTerm',
 			metric: 'Requests',
-			calculate: function(actualValue, req, res, callback){
+			calculate: function(currentValue, req, res, callback){
 				//synchronousCalculation
 				return actualValue + 1;			
 			}
@@ -161,16 +165,16 @@ And `customMetrics` creates a middleware that checks if ResourceTerm is fulfille
 
 ```
 
- On this example you must do request with ```?user=:key```. For example: 
+ On this example you must do request with ```?user=:key```. For example:
 
 ```
 curl -X GET http://localhost:9999/api/v1/birds?user=proUser1
-``` 
+```
 
 The URL that will be used to check if *"key"* is authorized is:
 
 ```
 http://datastore.governify.io/api/v6.1/service1/agreements/proUser1
-``` 
+```
 
 And `customMetrics` creates a middleware that checks if RequestTerm is fulfilled and updates the Requests metric with the value that is calculated synchronously.
